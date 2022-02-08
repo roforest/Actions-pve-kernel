@@ -1,0 +1,88 @@
+name: Build pve-kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.config'
+
+env:
+  REPO_URL: git://git.proxmox.com/git/pve-kernel.git
+  REPO_BRANCH: master
+  CONFIG_FILE: .config
+  SCRIPTS_PATH: ${{ github.workspace }}/scripts
+  SSH_ACTIONS: false
+  UPLOAD_BIN_DIR: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        git pull
+        sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
+        
+    - name: Clone source code
+      run: git clone $REPO_URL -b $REPO_BRANCH pve-kernel
+    
+    - name: Fix ACS patch
+      run: |
+        cd pve-kernel
+        sudo chmod a+x $SCRIPTS_PATH/ACS_patch.sh  && $SCRIPTS_PATH/ACS_patch.sh
+    
+    - name: Fix DEBUG_INFO_BTF
+      run: |
+        cd pve-kernel
+        sed -i 's/${LINUX_TOOLS_DBG_DEB}//' Makefile
+        
+    - name: Disable fwcheck
+      run: |
+        cd pve-kernel
+        sed -i "s/rules fwcheck abicheck/rules abicheck/" debian/rules
+        
+    - name: Freeing up disk space on CI system
+      run: |
+        dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+        df -h
+        sudo chmod a+x $SCRIPTS_PATH/free_disk.sh && sudo $SCRIPTS_PATH/free_disk.sh
+        df -h
+        
+    - name: Compile the PVE kernel
+      id: compile
+      run: |
+        cd pve-kernel
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 V=s
+        echo "::set-output name=status::success"
+  
+    - name: Create Release Directory
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      run: |
+        cd pve-kernel
+        mkdir release
+        cp *.deb release/
+        cp *.ddeb release/
+        
+    - name: Init version number
+      id: getverion
+      run: |
+        cd pve-kernel
+        echo "::set-output name=version::$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')"
+      
+    - name: Upload kernel directory
+      uses: actions/upload-artifact@master
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: ${{ format('{0}-roforest', steps.getverion.outputs.version) }} 
+        path: pve-kernel/release
