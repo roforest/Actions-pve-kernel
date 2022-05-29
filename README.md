@@ -10,7 +10,7 @@ Build Proxmox VE Kernel for J3455 with IOMMU using GitHub Actions
 
 # 注意事项
 If auto update is needed, replaced "{{ secrets.REPO_TOKEN }}" with your repository_secrets setting in "auto update.yml".
-Do not use "{{ secrets.GITHUB_TOKEN }}", see **Using the GITHUB_TOKEN in a workflow**: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow.
+Do not use "{{ secrets.GITHUB_TOKEN }}", see: [Using the GITHUB_TOKEN in a workflow](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow).
 
 # Thanks 
 
