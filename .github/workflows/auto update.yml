@@ -2,8 +2,8 @@ name: Update configs when pve-kernel release
 
 on:
   workflow_dispatch:
-  #schedule:
-  #  - cron: '0 2 * * *' # Every day
+  schedule:
+    - cron: '0 2 * * *' # Every day
 
 jobs:
   check:
@@ -13,7 +13,7 @@ jobs:
       max-parallel: 1
       matrix:
         branch: ['master','pve-kernel-5.15','pve-kernel-5.13', 'pve-kernel-5.11']
-    if: github.event.repository.owner.id == github.event.sender.id
+    #if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
     - name: Checkout Sources
