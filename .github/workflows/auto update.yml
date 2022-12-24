@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout Sources
-      uses: actions/checkout@v2
+      uses: actions/checkout@main
       with:
         token: ${{ secrets.REPO_TOKEN }}
       
@@ -38,11 +38,11 @@ jobs:
         ABIVer=`curl -s https://git.proxmox.com/?p=pve-kernel.git\;a=log\;h=refs/heads/${{ matrix.branch }} |  grep -o "ABI.*" | head -n 1 | awk -F '<' '{print $1}' | awk '{print $NF}'`
         KernelVer="pve-kernel-"$ABIVer"-"$SubVer
         if [[ $KernelVer == $CurVer ]]; then
-            echo "::set-output name=status::fail"
+            echo "status=fail" >> $GITHUB_OUTPUT
         else
             sudo echo $KernelVer > $Path
-            echo "::set-output name=version::$KernelVer"
-            echo "::set-output name=status::success"
+            echo "version=$KernelVer" >> $GITHUB_OUTPUT
+            echo "status=success" >> $GITHUB_OUTPUT
         fi
         
     - name: Commit and Push changes

@@ -24,7 +24,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@master
+      uses: actions/checkout@main
     
     - name: Initialization environment
       env:
@@ -64,7 +64,7 @@ jobs:
         cd pve-kernel
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 V=s
-        echo "::set-output name=status::success"
+        echo "status=success" >> $GITHUB_OUTPUT
   
     - name: Create Release Directory
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
@@ -77,7 +77,7 @@ jobs:
       id: getverion
       run: |
         cd pve-kernel
-        echo "::set-output name=version::$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')"
+        echo "version=$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')" >> $GITHUB_OUTPUT
       
     - name: Upload kernel directory
       uses: actions/upload-artifact@master
