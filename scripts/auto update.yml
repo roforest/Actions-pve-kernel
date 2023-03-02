@@ -1,0 +1,57 @@
+name: Update configs when pve-kernel release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # Every day
+
+jobs:
+  check:
+    name: Check for new release
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        branch: ['master','pve-kernel-5.15']
+    #if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+    - name: Checkout Sources
+      uses: actions/checkout@main
+      with:
+        token: ${{ secrets.REPO_TOKEN }}
+      
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo -E apt-get update
+        sudo -E apt install curl
+        
+    - name: Check for updates
+      id: update
+      run: |
+        Config=`echo ${{ matrix.branch }} | awk -F '-' '{print $3}' | awk -F '.' '{print $1 $2}'`
+        Path='${{ github.workspace }}/.config'$Config
+        CurVer=`cat $Path`
+        SubVer=`curl -s https://git.proxmox.com/?p=pve-kernel.git\;a=log\;h=refs/heads/${{ matrix.branch }} |  grep -o "bump.*" | head -n 1 | awk -F '<' '{print $1}' | awk '{print $NF}'`
+        ABIVer=`curl -s https://git.proxmox.com/?p=pve-kernel.git\;a=log\;h=refs/heads/${{ matrix.branch }} |  grep -o "update ABI.*" | head -n 1 | awk -F '<' '{print $1}' | awk '{print $NF}'`
+        KernelVer="pve-kernel-"$ABIVer"-"$SubVer
+        if [[ $KernelVer == $CurVer ]]; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+        else
+            sudo echo $KernelVer > $Path
+            echo "version=$KernelVer" >> $GITHUB_OUTPUT
+            echo "status=success" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit and Push changes
+      continue-on-error: true
+      if: steps.update.outputs.status == 'success'
+      run: |
+        git config --local user.email "79748239+roforest@users.noreply.github.com"
+        git config --local user.name "roforest"
+        git pull
+        git commit -m '${{ steps.update.outputs.version }}' -a
+        git push
+        
