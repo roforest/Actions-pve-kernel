@@ -9,7 +9,7 @@ on:
       - '.config'
 
 env:
-  REPO_URL: git://git.proxmox.com/git/pve-kernel.git
+  REPO_URL: https://git.proxmox.com/git/pve-kernel.git
   REPO_BRANCH: master
   CONFIG_FILE: .config
   SCRIPTS_PATH: ${{ github.workspace }}/scripts
@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
@@ -31,7 +31,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         git pull
-        sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
+        #sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
         
     - name: Clone source code
       run: git clone $REPO_URL -b $REPO_BRANCH pve-kernel
@@ -44,7 +44,7 @@ jobs:
     - name: Fix DEBUG_INFO_BTF
       run: |
         cd pve-kernel
-        sed -i 's/${LINUX_TOOLS_DBG_DEB}//' Makefile
+        sed -i 's/${LINUX_TOOLS_DBG_DEB}/# ${LINUX_TOOLS_DBG_DEB}/' Makefile
         
     - name: Disable fwcheck
       run: |
@@ -54,27 +54,39 @@ jobs:
     - name: Freeing up disk space on CI system
       run: |
         dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+        du -d 4 -ah / | sort -h | head -n 100
         df -h
         sudo chmod a+x $SCRIPTS_PATH/free_disk.sh && sudo $SCRIPTS_PATH/free_disk.sh
         df -h
         
+    - name: Setting up Docker Environment
+      run: |
+        sudo apt-get install ca-certificates curl gnupg lsb-release
+        sudo mkdir -m 0755 -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
     - name: Compile the PVE kernel
       id: compile
       run: |
-        cd pve-kernel
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s
+        sudo chmod a+x $SCRIPTS_PATH/dockerun_bullseye.sh
+        sudo docker run -v ${{ github.workspace }}:/home/build debian:bullseye /home/build/scripts/dockerun_bullseye.sh
         echo "status=success" >> $GITHUB_OUTPUT
   
     - name: Create Release Directory
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
+        sudo chmod a+w pve-kernel
         cd pve-kernel
         mkdir release
         cp *deb release/
         
     - name: Init version number
       id: getverion
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
         cd pve-kernel
         echo "version=$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')" >> $GITHUB_OUTPUT

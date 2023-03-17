@@ -9,7 +9,7 @@ on:
       - '.config515'
 
 env:
-  REPO_URL: git://git.proxmox.com/git/pve-kernel.git
+  REPO_URL: https://git.proxmox.com/git/pve-kernel.git
   REPO_BRANCH: pve-kernel-5.15
   CONFIG_FILE: .config
   SCRIPTS_PATH: ${{ github.workspace }}/scripts
@@ -44,7 +44,7 @@ jobs:
     - name: Fix DEBUG_INFO_BTF
       run: |
         cd pve-kernel
-        sed -i 's/${LINUX_TOOLS_DBG_DEB}//' Makefile
+        sed -i 's/${LINUX_TOOLS_DBG_DEB}/# ${LINUX_TOOLS_DBG_DEB}/' Makefile
         
     - name: Disable fwcheck
       run: |
@@ -54,6 +54,7 @@ jobs:
     - name: Freeing up disk space on CI system
       run: |
         dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+        du -d 4 -ah / | sort -h | head -n 100
         df -h
         sudo chmod a+x $SCRIPTS_PATH/free_disk.sh && sudo $SCRIPTS_PATH/free_disk.sh
         df -h
@@ -75,6 +76,7 @@ jobs:
         
     - name: Init version number
       id: getverion
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
         cd pve-kernel
         echo "version=$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')" >> $GITHUB_OUTPUT
