@@ -54,7 +54,7 @@ jobs:
     - name: Freeing up disk space on CI system
       run: |
         dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
-        du -d 4 -ah / | sort -h | head -n 100
+        du -d 4 -ah / | sort -h | tail -n 100
         df -h
         sudo chmod a+x $SCRIPTS_PATH/free_disk.sh && sudo $SCRIPTS_PATH/free_disk.sh
         df -h
