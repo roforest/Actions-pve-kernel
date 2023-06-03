@@ -31,7 +31,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         git pull
-        #sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
+        sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
         
     - name: Clone source code
       run: git clone $REPO_URL -b $REPO_BRANCH pve-kernel
@@ -72,8 +72,10 @@ jobs:
     - name: Compile the PVE kernel
       id: compile
       run: |
-        sudo chmod a+x $SCRIPTS_PATH/dockerun_bullseye.sh
-        sudo docker run -v ${{ github.workspace }}:/home/build debian:bullseye /home/build/scripts/dockerun_bullseye.sh
+        #sudo chmod a+x $SCRIPTS_PATH/dockerun_bullseye.sh
+        #sudo docker run -v ${{ github.workspace }}:/home/build debian:bullseye /home/build/scripts/dockerun_bullseye.sh
+        cd pve-kernel
+        make
         echo "status=success" >> $GITHUB_OUTPUT
   
     - name: Create Release Directory
