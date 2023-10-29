@@ -1,0 +1,99 @@
+name: Build pve-kernel for bullseye-6.2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.config_bullseye62'
+
+env:
+  REPO_URL: https://git.proxmox.com/git/pve-kernel.git
+  REPO_BRANCH: bullseye-6.2
+  CONFIG_FILE: .config
+  SCRIPTS_PATH: ${{ github.workspace }}/scripts
+  SSH_ACTIONS: false
+  UPLOAD_BIN_DIR: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+    
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        git pull
+        #sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
+        
+    - name: Clone source code
+      run: git clone $REPO_URL -b $REPO_BRANCH pve-kernel
+    
+    - name: Fix ACS patch
+      run: |
+        cd pve-kernel
+        sudo chmod a+x $SCRIPTS_PATH/ACS_patch.sh  && $SCRIPTS_PATH/ACS_patch.sh
+    
+    - name: Fix DEBUG_INFO_BTF
+      run: |
+        cd pve-kernel
+        sed -i 's/${LINUX_TOOLS_DBG_DEB}/# ${LINUX_TOOLS_DBG_DEB}/' Makefile
+        
+    - name: Disable fwcheck
+      run: |
+        cd pve-kernel
+        sed -i "s/rules fwcheck abicheck/rules abicheck/" debian/rules
+        
+    - name: Freeing up disk space on CI system
+      run: |
+        dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
+        du -d 4 -ah / | sort -h | tail -n 100
+        df -h
+        sudo chmod a+x $SCRIPTS_PATH/free_disk.sh && sudo $SCRIPTS_PATH/free_disk.sh
+        df -h
+        
+    - name: Setting up Docker Environment
+      run: |
+        sudo apt-get install ca-certificates curl gnupg lsb-release
+        sudo mkdir -m 0755 -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+        sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+ 
+    - name: Compile the PVE kernel
+      id: compile
+      run: |
+        sudo chmod a+x $SCRIPTS_PATH/dockerun_bullseye.sh
+        sudo docker run -v ${{ github.workspace }}:/home/build debian:bullseye /home/build/scripts/dockerun_bullseye.sh
+        echo "status=success" >> $GITHUB_OUTPUT
+  
+    - name: Create Release Directory
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      run: |
+        sudo chmod a+w pve-kernel
+        cd pve-kernel
+        mkdir release
+        cp *deb release/
+        
+    - name: Init version number
+      id: getverion
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      run: |
+        cd pve-kernel
+        echo "version=$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')" >> $GITHUB_OUTPUT
+      
+    - name: Upload kernel directory
+      uses: actions/upload-artifact@master
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: ${{ format('{0}-roforest', steps.getverion.outputs.version) }} 
+        path: pve-kernel/release
