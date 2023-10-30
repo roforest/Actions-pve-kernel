@@ -6,7 +6,7 @@ on:
     branches:
       - master
     paths:
-      - '.configBookworm62'
+      - '.configbookworm62'
 
 env:
   REPO_URL: https://git.proxmox.com/git/pve-kernel.git

@@ -6,7 +6,7 @@ on:
     branches:
       - master
     paths:
-      - '.config'
+      - '.configmaster'
 
 env:
   REPO_URL: https://git.proxmox.com/git/pve-kernel.git
