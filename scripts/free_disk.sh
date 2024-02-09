@@ -1,4 +1,4 @@
-#apt-get remove -y '^ghc-8.*'
+apt-get remove -y '^ghc*'
 apt-get remove -y '^dotnet-.*'
 apt-get remove -y '^llvm-.*'
 apt-get remove -y 'php.*'
@@ -11,3 +11,12 @@ rm -rf /usr/share/swift/
 rm -rf /usr/local/lib/android/
 rm -rf /imagegeneration
 rm -rf /opt/hostedtoolcache/CodeQL/
+rm -rf /usr/local/julia*
+rm -rf /usr/share/kotlinc
+rm -rf /usr/local/share/phantomjs*
+rm -rf /usr/local/share/boost
+rm -rf /usr/share/miniconda
+docker rmi $(docker image ls -q --filter "reference=node*")
+docker rmi $(docker image ls -q --filter "reference=buildpack*")
+docker rmi $(docker image ls -q --filter "reference=alpine*")
+docker rmi $(docker image ls -q --filter "reference=ubuntu*")
