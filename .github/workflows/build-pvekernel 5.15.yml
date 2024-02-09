@@ -13,6 +13,7 @@ env:
   REPO_BRANCH: pve-kernel-5.15
   CONFIG_FILE: .config
   SCRIPTS_PATH: ${{ github.workspace }}/scripts
+  BUILD_PATH: /mnt/pve-kernel
   SSH_ACTIONS: false
   UPLOAD_BIN_DIR: true
   TZ: Asia/Shanghai
@@ -34,21 +35,23 @@ jobs:
         #sudo chmod a+x $SCRIPTS_PATH/init_env.sh && sudo -E $SCRIPTS_PATH/init_env.sh
         
     - name: Clone source code
-      run: git clone $REPO_URL -b $REPO_BRANCH pve-kernel
+      run: |
+        cd /mnt
+        git clone $REPO_URL -b $REPO_BRANCH pve-kernel
     
     - name: Fix ACS patch
       run: |
-        cd pve-kernel
+        cd $BUILD_PATH
         sudo chmod a+x $SCRIPTS_PATH/ACS_patch.sh  && $SCRIPTS_PATH/ACS_patch.sh
     
     - name: Fix DEBUG_INFO_BTF
       run: |
-        cd pve-kernel
+        cd $BUILD_PATH
         sed -i 's/${LINUX_TOOLS_DBG_DEB}/# ${LINUX_TOOLS_DBG_DEB}/' Makefile
         
     - name: Disable fwcheck
       run: |
-        cd pve-kernel
+        cd $BUILD_PATH
         sed -i "s/rules fwcheck abicheck/rules abicheck/" debian/rules
         
     - name: Freeing up disk space on CI system
@@ -73,14 +76,14 @@ jobs:
       id: compile
       run: |
         sudo chmod a+x $SCRIPTS_PATH/dockerun_bullseye.sh
-        sudo docker run -v ${{ github.workspace }}:/home/build debian:bullseye /home/build/scripts/dockerun_bullseye.sh
+        sudo docker run -v ${{ github.workspace }}/mnt:/home/build debian:bullseye /home/build/scripts/dockerun_bullseye.sh
         echo "status=success" >> $GITHUB_OUTPUT
   
     - name: Create Release Directory
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
-        sudo chmod a+w pve-kernel
-        cd pve-kernel
+        sudo chmod a+w $BUILD_PATH
+        cd $BUILD_PATH
         mkdir release
         cp *deb release/
         
@@ -88,7 +91,7 @@ jobs:
       id: getverion
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
-        cd pve-kernel
+        cd $BUILD_PATH
         echo "version=$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')" >> $GITHUB_OUTPUT
       
     - name: Upload kernel directory
@@ -96,4 +99,4 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: ${{ format('{0}-roforest', steps.getverion.outputs.version) }} 
-        path: pve-kernel/release
+        path: $BUILD_PATH/release
