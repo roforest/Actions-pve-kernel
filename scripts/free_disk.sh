@@ -3,7 +3,7 @@ apt purge -y '^dotnet-.*'
 apt purge -y '^llvm-.*'
 apt purge -y 'php.*'
 apt purge -y '^temurin-.*-jdk'
-apt purge -y azure-cli google-cloud-sdk hhvm google-chrome-stable microsoft-edge-stable firefox powershell mono-devel mongodb* libpq-dev moby-* cabal* clang*
+apt purge -y azure-cli google-cloud-sdk hhvm google-chrome-stable microsoft-edge-stable firefox powershell mono-devel mysql* postgresql* mongodb* libpq-dev moby-* cabal* clang* gfortran-* powershell kubectl r-base
 apt-get autoremove -y
 apt-get autoclean -y
 rm -rf /opt/*
