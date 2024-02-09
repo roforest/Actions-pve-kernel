@@ -13,7 +13,6 @@ env:
   REPO_BRANCH: pve-kernel-5.15
   CONFIG_FILE: .config
   SCRIPTS_PATH: ${{ github.workspace }}/scripts
-  BUILD_PATH: /mnt/pve-kernel
   SSH_ACTIONS: false
   UPLOAD_BIN_DIR: true
   TZ: Asia/Shanghai
@@ -41,17 +40,17 @@ jobs:
     
     - name: Fix ACS patch
       run: |
-        cd $BUILD_PATH
+        cd /mnt/pve-kernel
         sudo chmod a+x $SCRIPTS_PATH/ACS_patch.sh  && $SCRIPTS_PATH/ACS_patch.sh
     
     - name: Fix DEBUG_INFO_BTF
       run: |
-        cd $BUILD_PATH
+        cd /mnt/pve-kernel
         sed -i 's/${LINUX_TOOLS_DBG_DEB}/# ${LINUX_TOOLS_DBG_DEB}/' Makefile
         
     - name: Disable fwcheck
       run: |
-        cd $BUILD_PATH
+        cd /mnt/pve-kernel
         sed -i "s/rules fwcheck abicheck/rules abicheck/" debian/rules
         
     - name: Freeing up disk space on CI system
@@ -82,8 +81,8 @@ jobs:
     - name: Create Release Directory
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
-        sudo chmod a+w $BUILD_PATH
-        cd $BUILD_PATH
+        sudo chmod a+w /mnt/pve-kernel
+        cd /mnt/pve-kernel
         mkdir release
         cp *deb release/
         
@@ -91,7 +90,7 @@ jobs:
       id: getverion
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       run: |
-        cd $BUILD_PATH
+        cd /mnt/pve-kernel
         echo "version=$(ls abi-prev* | sed  's/abi-prev/pve-kernel/g' | sed 's/-pve//g')" >> $GITHUB_OUTPUT
       
     - name: Upload kernel directory
@@ -99,4 +98,4 @@ jobs:
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
         name: ${{ format('{0}-roforest', steps.getverion.outputs.version) }} 
-        path: $BUILD_PATH/release
+        path: /mnt/pve-kernel/release
