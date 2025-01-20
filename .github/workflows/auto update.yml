@@ -34,7 +34,7 @@ jobs:
         Config=`echo ${{ matrix.branch }} | awk -F '-' '{print $1 $2 $3}' | awk -F '.' '{print $1 $2}'`
         Path='${{ github.workspace }}/.config'$Config
         CurVer=`cat $Path`
-        SubVer=`curl -s https://git.proxmox.com/?p=pve-kernel.git\;a=log\;h=refs/heads/${{ matrix.branch }} |  grep -o "bump.*" | head -n 1 | awk -F '<' '{print $1}' | awk '{print $NF}'`
+        SubVer=`curl -s https://git.proxmox.com/?p=pve-kernel.git\;a=log\;h=refs/heads/${{ matrix.branch }} |  grep -o "bump version.*" | head -n 1 | awk -F '<' '{print $1}' | awk '{print $NF}'`
         ABIVer=`curl -s https://git.proxmox.com/?p=pve-kernel.git\;a=log\;h=refs/heads/${{ matrix.branch }} |  grep -o "update ABI.*" | head -n 1 | awk -F '<' '{print $1}' | awk '{print $NF}'`
         KernelVer="pve-kernel-"$ABIVer"-"$SubVer
         if [[ $KernelVer == $CurVer ]]; then
