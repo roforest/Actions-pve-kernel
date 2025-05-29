@@ -1,4 +1,4 @@
-name: Build pve-kernel bookworm-6.5
+name: Build pve-kernel bookworm-6.14
 
 on:
   workflow_dispatch:
@@ -6,11 +6,11 @@ on:
     branches:
       - master
     paths:
-      - '.configbookworm65'
+      - '.configbookworm614'
 
 env:
   REPO_URL: https://git.proxmox.com/git/pve-kernel.git
-  REPO_BRANCH: bookworm-6.5
+  REPO_BRANCH: bookworm-6.14
   CONFIG_FILE: .config
   SCRIPTS_PATH: ${{ github.workspace }}/scripts
   SSH_ACTIONS: false
@@ -19,7 +19,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
