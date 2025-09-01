@@ -3,7 +3,7 @@ apt update
 apt-get install -y wget
 wget https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg -O /usr/share/keyrings/proxmox-archive-keyring.gpg
 chmod +r /usr/share/keyrings/proxmox-archive-keyring.gpg
-cat > /etc/apt/sources.list.d/pve-enterprise.sources << EOF
+cat > /etc/apt/sources.list.d/proxmox.sources << EOF
 Types: deb
 URIs: http://download.proxmox.com/debian/pve
 Suites: trixie
