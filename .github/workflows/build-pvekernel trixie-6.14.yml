@@ -1,4 +1,4 @@
-name: Build pve-kernel bookworm-6.11
+name: Build pve-kernel
 
 on:
   workflow_dispatch:
@@ -6,11 +6,11 @@ on:
     branches:
       - master
     paths:
-      - '.configbookworm611'
+      - '.configtrixie614'
 
 env:
   REPO_URL: https://git.proxmox.com/git/pve-kernel.git
-  REPO_BRANCH: bookworm-6.11
+  REPO_BRANCH: trixie-6.14
   CONFIG_FILE: .config
   SCRIPTS_PATH: ${{ github.workspace }}/scripts
   SSH_ACTIONS: false
@@ -72,8 +72,8 @@ jobs:
     - name: Compile the PVE kernel
       id: compile
       run: |
-        sudo chmod a+x $SCRIPTS_PATH/dockerun_bookworm.sh
-        sudo docker run -v ${{ github.workspace }}:/home/build debian:bookworm /home/build/scripts/dockerun_bookworm.sh
+        sudo chmod a+x $SCRIPTS_PATH/dockerun_trixie.sh
+        sudo docker run -v ${{ github.workspace }}:/home/build debian:trixie /home/build/scripts/dockerun_trixie.sh
         #cd pve-kernel
         #make
         echo "status=success" >> $GITHUB_OUTPUT
