@@ -17,7 +17,10 @@ rm -rf /usr/local/lib/android/
 rm -rf /usr/local/julia*
 rm -rf /usr/local/share/phantomjs*
 rm -rf /usr/local/share/boost
+rm -rf /usr/local/aws-cli
 rm -rf /usr/lib/jvm
+rm -rf /usr/share/az_*
+rm -rf /opt/pipx
 docker rmi $(docker image ls -q --filter "reference=node*")
 docker rmi $(docker image ls -q --filter "reference=buildpack*")
 docker rmi $(docker image ls -q --filter "reference=alpine*")
